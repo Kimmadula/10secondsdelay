@@ -18,9 +18,18 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'firstname',
+        'middlename',
+        'lastname',
+        'username',
         'email',
         'password',
+        'photo',
+        'role',
+        'plan',
+        'token_balance',
+        'skill_id',
+        'is_verified',
     ];
 
     /**
@@ -41,4 +50,9 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    public function skill()
+    {
+        return $this->belongsTo(\App\Models\Skill::class, 'skill_id', 'skill_id');
+    }
 }

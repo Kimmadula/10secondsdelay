@@ -13,8 +13,10 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('photo')->nullable()->change();
+        Schema::create('skills', function (Blueprint $table) {
+            $table->id('skill_id'); // BIGINT UNSIGNED PRIMARY KEY
+            $table->string('category', 50); // Category of the skill
+            $table->string('name', 50); // Name of the skill
         });
     }
 
@@ -25,8 +27,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::table('users', function (Blueprint $table) {
-            $table->string('photo')->nullable(false)->change();
-        });
+        Schema::dropIfExists('skills');
     }
 };

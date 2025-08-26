@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Models\Skill;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
@@ -20,21 +21,24 @@ class RegisteredUserController extends Controller
      */
     public function create(): View
     {
-        return view('auth.register');
+        $skills = Skill::all();
+        return view('auth.register', compact('skills'));
     }
 
     /**
      * Handle an incoming registration request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): RedirectResponse
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
+            'firstname' => ['required', 'string', 'max:50'],
+            'middlename' => ['nullable', 'string', 'max:50'],
+            'lastname' => ['required', 'string', 'max:50'],
+            'username' => ['required', 'string', 'max:50', 'unique:users'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'photo' => ['nullable', 'image', 'max:2048'], // Validate photo
+            'photo' => ['nullable', 'image', 'max:2048'],
+            'skill_id' => ['required', 'exists:skills,skill_id'],
         ]);
 
         $photoPath = null;
@@ -43,11 +47,18 @@ class RegisteredUserController extends Controller
         }
 
         $user = User::create([
-            'name' => $request->name,
+            'firstname' => $request->firstname,
+            'middlename' => $request->middlename,
+            'lastname' => $request->lastname,
+            'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'status' => 'pending',
             'photo' => $photoPath,
+            'skill_id' => $request->skill_id,
+            'is_verified' => false, // stays false until admin approves
+            'role' => 'user',
+            'plan' => 'free',
+            'token_balance' => 0,
         ]);
 
         event(new Registered($user));

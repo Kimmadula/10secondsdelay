@@ -29,11 +29,14 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-Route::middleware(['auth', 'admin'])->group(function () {
-    Route::get('/admin', [AdminController::class, 'index'])->name('admin.dashboard');
-    Route::patch('/admin/approve/{user}', [AdminController::class, 'approve'])->name('admin.approve');
-    Route::patch('/admin/reject/{user}', [AdminController::class, 'reject'])->name('admin.reject');
-    Route::get('/admin/user/{user}', [AdminController::class, 'show'])->name('admin.user.show');
+Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
+    Route::get('/', [AdminController::class, 'index'])->name('admin.dashboard');
+    Route::get('/users', [AdminController::class, 'usersIndex'])->name('admin.users.index');
+    Route::get('/skills', [AdminController::class, 'skillsIndex'])->name('admin.skills.index');
+    Route::get('/skills/create', [AdminController::class, 'createSkill'])->name('admin.skill.create');
+    Route::patch('/approve/{user}', [AdminController::class, 'approve'])->name('admin.approve');
+    Route::patch('/reject/{user}', [AdminController::class, 'reject'])->name('admin.reject');
+    Route::get('/user/{user}', [AdminController::class, 'show'])->name('admin.user.show');
 });
 
 require __DIR__.'/auth.php';

@@ -39,11 +39,11 @@ class AuthenticatedSessionController extends Controller
 
         $user = Auth::user();
 
-        if ($user->usertype === 'admin') {
+        if ($user->role === 'admin') {
             return redirect()->route('admin.dashboard');
         }
 
-        if ($user->status === 'pending') {
+        if (!$user->is_verified) {
             Auth::logout();
             return redirect()->route('login')->with('status', 'Your registration is pending approval by an admin.');
         }

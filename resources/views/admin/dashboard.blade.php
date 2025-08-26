@@ -1,61 +1,60 @@
-
 @extends('layouts.app')
 
 @section('content')
-    <h1>Admin Dashboard</h1>
-    <h2>Pending Users</h2>
-    <table style="width:100%; border-collapse: collapse;">
+<main style="padding:32px;">
+    <h1 style="font-size:2rem; margin-bottom:1rem;">Admin Dashboard</h1>
+    <h2 style="font-size:1.25rem; margin-bottom:1rem;">Pending Users</h2>
+    <table style="width:100%; border-collapse: collapse; background:#fff; box-shadow:0 2px 8px #eee;">
         <thead>
-            <tr>
-                <th style="border-bottom: 1px solid #ccc; text-align:left; padding:8px;">Name</th>
-                <th style="border-bottom: 1px solid #ccc; text-align:left; padding:8px;">Email</th>
-                <th style="border-bottom: 1px solid #ccc; text-align:left; padding:8px;">Photo</th>
-                <th style="border-bottom: 1px solid #ccc; text-align:left; padding:8px;">Action</th>
+            <tr style="background:#f7fafc;">
+                <th style="border-bottom: 1px solid #ccc; text-align:left; padding:12px;">Name</th>
+                <th style="border-bottom: 1px solid #ccc; text-align:left; padding:12px;">Email</th>
+                <th style="border-bottom: 1px solid #ccc; text-align:left; padding:12px;">Photo</th>
+                <th style="border-bottom: 1px solid #ccc; text-align:left; padding:12px;">Action</th>
             </tr>
         </thead>
         <tbody>
             @forelse($pendingUsers as $user)
                 <tr>
-                    <td style="padding:8px;">{{ $user->name }}</td>
-                    <td style="padding:8px;">{{ $user->email }}</td>
-                    <td style="padding:8px;">
+                    <td style="padding:12px;">
+                        {{ $user->firstname }} {{ $user->middlename }} {{ $user->lastname }}
+                    </td>
+                    <td style="padding:12px;">{{ $user->email }}</td>
+                    <td style="padding:12px;">
                         @if($user->photo)
                             <a href="{{ asset('storage/' . $user->photo) }}" target="_blank">
-                                <img src="{{ asset('storage/' . $user->photo) }}" alt="User Photo" style="width:50px; height:50px; object-fit:cover; border-radius:4px;">
+                                <img src="{{ asset('storage/' . $user->photo) }}" alt="User Photo" style="width:48px; height:48px; object-fit:cover; border-radius:6px; border:1px solid #ddd;">
                             </a>
                         @else
-                            <span>No photo</span>
+                            <span style="color:#888;">No photo</span>
                         @endif
                     </td>
-                    <td style="padding:8px;">
-                        <a href="{{ route('admin.user.show', $user->id) }}" style="padding:4px 12px; background:#4299e1; color:#fff; border:none; border-radius:4px; text-decoration:none; margin-right:4px;">
-                            View Details
+                    <td style="padding:12px;">
+                        <a href="{{ route('admin.user.show', $user->id) }}" style="padding:6px 16px; background:#4299e1; color:#fff; border:none; border-radius:4px; text-decoration:none; margin-right:6px;">
+                            View
                         </a>
-                        @if($user->status === 'pending')
-                            <form action="{{ route('admin.approve', $user->id) }}" method="POST" style="display:inline;">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" style="padding:4px 12px; background:#38b2ac; color:#fff; border:none; border-radius:4px; cursor:pointer;">
-                                    Approve
-                                </button>
-                            </form>
-                            <form action="{{ route('admin.reject', $user->id) }}" method="POST" style="display:inline; margin-left:4px;">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" style="padding:4px 12px; background:#e53e3e; color:#fff; border:none; border-radius:4px; cursor:pointer;">
-                                    Reject
-                                </button>
-                            </form>
-                        @else
-                            <span style="color:green;">Approved</span>
-                        @endif
+                        <form action="{{ route('admin.approve', $user->id) }}" method="POST" style="display:inline;">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" style="padding:6px 16px; background:#38b2ac; color:#fff; border:none; border-radius:4px; cursor:pointer; margin-right:4px;">
+                                Approve
+                            </button>
+                        </form>
+                        <form action="{{ route('admin.reject', $user->id) }}" method="POST" style="display:inline;">
+                            @csrf
+                            @method('PATCH')
+                            <button type="submit" style="padding:6px 16px; background:#e53e3e; color:#fff; border:none; border-radius:4px; cursor:pointer;">
+                                Reject
+                            </button>
+                        </form>
                     </td>
                 </tr>
             @empty
                 <tr>
-                    <td colspan="4" style="padding:8px; text-align:center;">No pending users.</td>
+                    <td colspan="4" style="padding:12px; text-align:center; color:#888;">No pending users.</td>
                 </tr>
             @endforelse
         </tbody>
     </table>
+</main>
 @endsection
