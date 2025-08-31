@@ -15,6 +15,29 @@
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    <x-nav-link :href="route('trades.create')" :active="request()->routeIs('trades.create')">
+                        {{ __('Post Trade') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('trades.matches')" :active="request()->routeIs('trades.matches')">
+                        {{ __('Matches') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('trades.requests')" :active="request()->routeIs('trades.requests')">
+                        {{ __('Requests') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('trades.ongoing')" :active="request()->routeIs('trades.ongoing')">
+                        {{ __('Ongoing') }}
+                    </x-nav-link>
+                    <x-nav-link :href="route('trades.notifications')" :active="request()->routeIs('trades.notifications')" class="relative">
+                        {{ __('Notifications') }}
+                        @php
+                            $unreadCount = App\Http\Controllers\TradeController::getUnreadNotificationCount(Auth::id());
+                        @endphp
+                        @if($unreadCount > 0)
+                            <span class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold">
+                                {{ $unreadCount > 99 ? '99+' : $unreadCount }}
+                            </span>
+                        @endif
+                    </x-nav-link>
                 </div>
             </div>
 
@@ -69,6 +92,29 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('trades.create')" :active="request()->routeIs('trades.create')">
+                {{ __('Post Trade') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('trades.matches')" :active="request()->routeIs('trades.matches')">
+                {{ __('Matches') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('trades.requests')" :active="request()->routeIs('trades.requests')">
+                {{ __('Requests') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('trades.ongoing')" :active="request()->routeIs('trades.ongoing')">
+                {{ __('Ongoing') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('trades.notifications')" :active="request()->routeIs('trades.notifications')" class="relative">
+                {{ __('Notifications') }}
+                @php
+                    $unreadCount = App\Http\Controllers\TradeController::getUnreadNotificationCount(Auth::id());
+                @endphp
+                @if($unreadCount > 0)
+                    <span class="absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold">
+                        {{ $unreadCount > 99 ? '99+' : $unreadCount }}
+                    </span>
+                @endif
             </x-responsive-nav-link>
         </div>
 

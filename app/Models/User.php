@@ -21,6 +21,9 @@ class User extends Authenticatable
         'firstname',
         'middlename',
         'lastname',
+        'gender',
+        'bdate',
+        'address',
         'username',
         'email',
         'password',
@@ -49,6 +52,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'bdate' => 'date',
     ];
 
     public function skill()

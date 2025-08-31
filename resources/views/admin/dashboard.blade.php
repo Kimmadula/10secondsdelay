@@ -3,12 +3,19 @@
 @section('content')
 <main style="padding:32px;">
     <h1 style="font-size:2rem; margin-bottom:1rem;">Admin Dashboard</h1>
-    <h2 style="font-size:1.25rem; margin-bottom:1rem;">Pending Users</h2>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem; gap:12px; flex-wrap:wrap;">
+        <h2 style="font-size:1.25rem;">Pending Users</h2>
+        <div>
+            <a href="{{ route('admin.skills.index') }}" style="padding:8px 12px; background:#2563eb; color:#fff; border-radius:6px; text-decoration:none;">Manage Skills</a>
+        </div>
+    </div>
     <table style="width:100%; border-collapse: collapse; background:#fff; box-shadow:0 2px 8px #eee;">
         <thead>
             <tr style="background:#f7fafc;">
                 <th style="border-bottom: 1px solid #ccc; text-align:left; padding:12px;">Name</th>
+                <th style="border-bottom: 1px solid #ccc; text-align:left; padding:12px;">Username</th>
                 <th style="border-bottom: 1px solid #ccc; text-align:left; padding:12px;">Email</th>
+                <th style="border-bottom: 1px solid #ccc; text-align:left; padding:12px;">Skill</th>
                 <th style="border-bottom: 1px solid #ccc; text-align:left; padding:12px;">Photo</th>
                 <th style="border-bottom: 1px solid #ccc; text-align:left; padding:12px;">Action</th>
             </tr>
@@ -19,7 +26,9 @@
                     <td style="padding:12px;">
                         {{ $user->firstname }} {{ $user->middlename }} {{ $user->lastname }}
                     </td>
+                    <td style="padding:12px;">{{ $user->username }}</td>
                     <td style="padding:12px;">{{ $user->email }}</td>
+                    <td style="padding:12px;">{{ optional($user->skill)->name ?? '—' }}</td>
                     <td style="padding:12px;">
                         @if($user->photo)
                             <a href="{{ asset('storage/' . $user->photo) }}" target="_blank">

@@ -23,6 +23,33 @@
             <x-input-error :messages="$errors->get('lastname')" class="mt-2" />
         </div>
 
+        <!-- Gender -->
+        <div class="mt-4">
+            <x-input-label for="gender" :value="__('Gender')" />
+            <select id="gender" name="gender" class="block mt-1 w-full" required>
+                <option value="">Select gender</option>
+                <option value="male" {{ old('gender') == 'male' ? 'selected' : '' }}>Male</option>
+                <option value="female" {{ old('gender') == 'female' ? 'selected' : '' }}>Female</option>
+                <option value="other" {{ old('gender') == 'other' ? 'selected' : '' }}>Other</option>
+            </select>
+            <x-input-error :messages="$errors->get('gender')" class="mt-2" />
+        </div>
+
+        <!-- Birthdate -->
+        <div class="mt-4">
+            <x-input-label for="bdate" :value="__('Birthdate')" />
+            <x-text-input id="bdate" class="block mt-1 w-full" type="date" name="bdate" :value="old('bdate')" required />
+            <x-input-error :messages="$errors->get('bdate')" class="mt-2" />
+        </div>
+
+        <!-- Address (Cebu, Philippines only) with suggestions -->
+        <div class="mt-4">
+            <x-input-label for="address" :value="__('Address (Cebu, Philippines only)')" />
+            <x-text-input id="address" class="block mt-1 w-full" type="text" name="address" list="address_suggestions" :value="old('address')" required />
+            <datalist id="address_suggestions"></datalist>
+            <x-input-error :messages="$errors->get('address')" class="mt-2" />
+        </div>
+
         <!-- Username -->
         <div class="mt-4">
             <x-input-label for="username" :value="__('Username')" />
@@ -106,6 +133,40 @@
                     }
                 });
             });
+
+            // Address suggestions (Cebu only)
+            const addressInput = document.getElementById('address');
+            const dataList = document.getElementById('address_suggestions');
+
+            function debounce(fn, delay) {
+                let t;
+                return function(...args) {
+                    clearTimeout(t);
+                    t = setTimeout(() => fn.apply(this, args), delay);
+                };
+            }
+
+            async function fetchSuggestions(query) {
+                try {
+                    const url = '/api/addresses/cebu/suggest?q=' + encodeURIComponent(query || '');
+                    const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+                    if (!res.ok) return;
+                    const data = await res.json();
+                    dataList.innerHTML = '';
+                    (data.suggestions || []).forEach(item => {
+                        const opt = document.createElement('option');
+                        opt.value = item;
+                        dataList.appendChild(opt);
+                    });
+                } catch (e) {}
+            }
+
+            addressInput.addEventListener('input', debounce(function(e) {
+                fetchSuggestions(e.target.value);
+            }, 250));
+
+            // Preload some suggestions initially
+            fetchSuggestions('');
         });
         </script>
 

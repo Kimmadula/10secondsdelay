@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\User;
+use App\Models\Skill;
+use Illuminate\Http\Request;
 
 class AdminController extends Controller
 {
@@ -33,7 +35,30 @@ class AdminController extends Controller
 
     public function skillsIndex()
     {
-        $skills = \App\Models\Skill::all();
+        $skills = Skill::orderBy('category')->orderBy('name')->get();
         return view('admin.skills.index', compact('skills'));
+    }
+
+    public function createSkill()
+    {
+        return view('admin.skills.create');
+    }
+
+    public function storeSkill(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:100'],
+            'category' => ['required', 'string', 'max:100'],
+        ]);
+
+        Skill::create($validated);
+
+        return redirect()->route('admin.skills.index')->with('success', 'Skill added.');
+    }
+
+    public function deleteSkill(Skill $skill)
+    {
+        $skill->delete();
+        return back()->with('success', 'Skill deleted.');
     }
 }

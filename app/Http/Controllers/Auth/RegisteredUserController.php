@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+ 
 
 class RegisteredUserController extends Controller
 {
@@ -34,6 +35,9 @@ class RegisteredUserController extends Controller
             'firstname' => ['required', 'string', 'max:50'],
             'middlename' => ['nullable', 'string', 'max:50'],
             'lastname' => ['required', 'string', 'max:50'],
+            'gender' => ['required', 'in:male,female,other'],
+            'bdate' => ['required', 'date', 'before_or_equal:' . now()->subYears(18)->toDateString()],
+            'address' => ['required', 'string', 'max:255'],
             'username' => ['required', 'string', 'max:50', 'unique:users'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
@@ -50,6 +54,9 @@ class RegisteredUserController extends Controller
             'firstname' => $request->firstname,
             'middlename' => $request->middlename,
             'lastname' => $request->lastname,
+            'gender' => $request->gender,
+            'bdate' => $request->bdate,
+            'address' => $request->address,
             'username' => $request->username,
             'email' => $request->email,
             'password' => Hash::make($request->password),
