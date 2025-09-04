@@ -11,4 +11,8 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    define: {
+        'process.env.MIX_PUSHER_APP_KEY': JSON.stringify(process.env.VITE_PUSHER_APP_KEY),
+        'process.env.MIX_PUSHER_APP_CLUSTER': JSON.stringify(process.env.VITE_PUSHER_APP_CLUSTER),
+    },
 });

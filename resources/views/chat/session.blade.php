@@ -17,6 +17,17 @@
 .flash-effect {
     animation: flash 0.5s ease-in-out;
 }
+
+/* Ensure all message bubbles have proper text wrapping */
+#chat-messages > div > div {
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+}
+
+#chat-messages > div > div > div:first-child {
+    word-break: break-word !important;
+    line-height: 1.4 !important;
+}
 </style>
 <div style="height: 100vh; display: flex; flex-direction: column;">
     <!-- Header -->
@@ -57,8 +68,8 @@
             <div id="chat-messages" style="flex: 1; padding: 16px; overflow-y: auto; background: #f9fafb;">
                 @foreach($messages as $message)
                     <div style="margin-bottom: 16px; display: flex; {{ $message->sender_id === Auth::id() ? 'justify-content: flex-end' : 'justify-content: flex-start' }};">
-                        <div style="max-width: 70%; {{ $message->sender_id === Auth::id() ? 'background: #3b82f6; color: white;' : 'background: #e5e7eb; color: #374151;' }} padding: 12px; border-radius: 12px; position: relative;">
-                            <div style="margin-bottom: 4px;">{{ $message->message }}</div>
+                        <div style="max-width: 70%; {{ $message->sender_id === Auth::id() ? 'background: #3b82f6; color: white;' : 'background: #e5e7eb; color: #374151;' }} padding: 12px; border-radius: 12px; position: relative; word-wrap: break-word; overflow-wrap: break-word;">
+                            <div style="margin-bottom: 4px; word-break: break-word; line-height: 1.4;">{{ $message->message }}</div>
                             <div style="font-size: 0.75rem; opacity: 0.8;">{{ $message->created_at->format('g:i A') }}</div>
                         </div>
                     </div>
@@ -70,7 +81,7 @@
                 <form id="message-form" style="display: flex; gap: 8px;">
                     <input type="text" id="message-input" placeholder="Type your message here..." 
                            style="flex: 1; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; outline: none;">
-                    <button type="submit" style="background: #1e40af; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Send</button>
+                    <button type="submit" id="send-button" style="background: #1e40af; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Send</button>
                 </form>
 
             </div>
@@ -206,6 +217,15 @@ if (window.Echo) {
             // Only add if it's not from the current user (to avoid duplicates)
             if (data.message.sender_id !== {{ Auth::id() }}) {
                 addMessageToChat(data.message, data.sender_name, data.timestamp, false);
+            } else {
+                // For our own messages, just update the timestamp if needed
+                const existingMessage = document.querySelector(`[data-confirmed="true"]`);
+                if (existingMessage) {
+                    const timestampElement = existingMessage.querySelector('div[style*="font-size: 0.75rem"]');
+                    if (timestampElement) {
+                        timestampElement.textContent = data.timestamp;
+                    }
+                }
             }
         });
 
@@ -218,20 +238,32 @@ if (window.Echo) {
         });
 }
 
-// Message handling
+// Message handling with debounce
+let isSending = false;
 document.getElementById('message-form').addEventListener('submit', function(e) {
     e.preventDefault();
     const input = document.getElementById('message-input');
     const message = input.value.trim();
     
-    if (message) {
+    if (message && !isSending) {
+        isSending = true;
         sendMessage(message);
         input.value = '';
+        
+        // Prevent rapid sending (reduced from 1000ms to 300ms for better responsiveness)
+        setTimeout(() => {
+            isSending = false;
+        }, 300);
     }
 });
 
 function sendMessage(message) {
-
+    // Show loading state
+    const sendButton = document.getElementById('send-button');
+    const originalText = sendButton.textContent;
+    sendButton.textContent = 'Sending...';
+    sendButton.disabled = true;
+    sendButton.style.background = '#6b7280';
     
     // Add message to UI immediately (optimistic update)
     const tempId = 'temp_' + Date.now();
@@ -246,31 +278,56 @@ function sendMessage(message) {
         },
         body: JSON.stringify({ message: message })
     })
-    .then(response => {
-
-        return response.json();
-    })
+    .then(response => response.json())
     .then(data => {
-
+        // Reset button state
+        sendButton.textContent = originalText;
+        sendButton.disabled = false;
+        sendButton.style.background = '#1e40af';
+        
         if (data.success) {
-            // Update the temporary message with the real one
+            // Update the temporary message with the real one and mark it as confirmed
             updateMessageInChat(tempId, data.message);
+            // Mark this message as confirmed to prevent duplicate Echo events
+            const messageElement = document.querySelector(`[data-temp-id="${tempId}"]`);
+            if (messageElement) {
+                messageElement.setAttribute('data-confirmed', 'true');
+                messageElement.removeAttribute('data-temp-id');
+            }
         } else {
-
             // Remove the temporary message if it failed
             removeMessageFromChat(tempId);
             showError('Failed to send message: ' + (data.error || 'Unknown error'));
         }
     })
     .catch(error => {
-
+        // Reset button state
+        sendButton.textContent = originalText;
+        sendButton.disabled = false;
+        sendButton.style.background = '#1e40af';
+        
         // Remove the temporary message if it failed
         removeMessageFromChat(tempId);
-                    showError('Failed to send message. Please try again.');
+        showError('Failed to send message. Please try again.');
     });
 }
 
 function addMessageToChat(message, senderName, timestamp, isOwn, tempId = null) {
+    // Check for duplicate messages to prevent double display
+    if (isOwn) {
+        const messageText = typeof message === 'string' ? message : message.message;
+        const existingMessages = document.querySelectorAll('#chat-messages > div');
+        const lastMessage = existingMessages[existingMessages.length - 1];
+        
+        if (lastMessage && lastMessage.querySelector('div[style*="background: #3b82f6"]')) {
+            const lastMessageText = lastMessage.querySelector('div[style*="margin-bottom: 4px"]').textContent;
+            if (lastMessageText === messageText) {
+                console.log('Duplicate message detected, skipping...');
+                return lastMessage;
+            }
+        }
+    }
+    
     const chatMessages = document.getElementById('chat-messages');
     const messageDiv = document.createElement('div');
     messageDiv.style.marginBottom = '16px';
@@ -286,8 +343,8 @@ function addMessageToChat(message, senderName, timestamp, isOwn, tempId = null) 
     const messageTime = timestamp || new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
     
     messageDiv.innerHTML = `
-        <div style="max-width: 70%; ${isOwn ? 'background: #3b82f6; color: white;' : 'background: #e5e7eb; color: #374151;'} padding: 12px; border-radius: 12px; position: relative;">
-            <div style="margin-bottom: 4px;">${messageText}</div>
+        <div style="max-width: 70%; ${isOwn ? 'background: #3b82f6; color: white;' : 'background: #e5e7eb; color: #374151;'} padding: 12px; border-radius: 12px; position: relative; word-wrap: break-word; overflow-wrap: break-word;">
+            <div style="margin-bottom: 4px; word-break: break-word; line-height: 1.4;">${messageText}</div>
             <div style="font-size: 0.75rem; opacity: 0.8;">${messageTime}</div>
         </div>
     `;
@@ -372,8 +429,8 @@ function updateMessageInChat(tempId, messageData) {
         const messageTime = new Date(messageData.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
         
         messageDiv.innerHTML = `
-            <div style="max-width: 70%; background: #3b82f6; color: white; padding: 12px; border-radius: 12px; position: relative;">
-                <div style="margin-bottom: 4px;">${messageText}</div>
+            <div style="max-width: 70%; background: #3b82f6; color: white; padding: 12px; border-radius: 12px; position: relative; word-wrap: break-word; overflow-wrap: break-word;">
+                <div style="margin-bottom: 4px; word-break: break-word; line-height: 1.4;">${messageText}</div>
                 <div style="font-size: 0.75rem; opacity: 0.8;">${messageTime}</div>
             </div>
         `;

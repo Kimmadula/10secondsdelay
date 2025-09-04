@@ -42,6 +42,12 @@ return [
                 'scheme' => env('PUSHER_SCHEME', 'https'),
                 'useTLS' => env('PUSHER_SCHEME', 'https') === 'https',
                 'encrypted' => true,
+                'timeout' => 5,
+                'keep_alive' => true,
+                'curl_options' => [
+                    CURLOPT_CONNECTTIMEOUT => 5,
+                    CURLOPT_TIMEOUT => 10,
+                ],
             ],
         ],
 

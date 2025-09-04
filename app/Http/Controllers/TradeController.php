@@ -51,44 +51,42 @@ class TradeController extends Controller
         // Get user's skill
         $userSkill = $user->skill;
         if (!$userSkill) {
-            return view('trades.matches', ['trades' => collect([])]);
+            return view('trades.matches', ['trades' => collect([]), 'noSkill' => true]);
         }
 
-        // Check if user has posted a trade
-        $userTrade = Trade::where('user_id', $user->id)->where('status', 'open')->first();
-        if (!$userTrade) {
-            return view('trades.matches', ['trades' => collect([]), 'noTradePosted' => true]);
-        }
-
-        // Verify user is only offering their registered skill
-        if ($userTrade->offering_skill_id != $user->skill_id) {
-            return view('trades.matches', ['trades' => collect([]), 'skillMismatch' => true]);
-        }
-
-        // Find trades where:
-        // 1. Our offering skill (registered skill) matches what they're looking for
-        // 2. Our looking skill matches what they're offering
+        // Get all open trades from other users
         $trades = Trade::with(['user', 'offeringSkill', 'lookingSkill'])
             ->where('user_id', '!=', $user->id)
             ->where('status', 'open')
-            ->where('looking_skill_id', $user->skill_id) // They want our registered skill
             ->get()
-            ->filter(function($trade) use ($userTrade) {
-                // Check if our looking skill matches what they're offering
-                if ($userTrade->looking_skill_id != $trade->offering_skill_id) {
-                    return false;
-                }
-                
-                return true;
-            })
-            ->map(function($trade) {
+            ->map(function($trade) use ($user) {
                 // Calculate compatibility score
                 $trade->compatibility_score = $this->calculateCompatibility($trade);
+                
+                // Check if this trade is compatible with user's skill
+                $trade->is_compatible = $this->isTradeCompatible($trade, $user);
+                
                 return $trade;
             })
             ->sortByDesc('compatibility_score');
 
         return view('trades.matches', compact('trades'));
+    }
+
+    private function isTradeCompatible($trade, $user)
+    {
+        // Check if user's skill matches what the trade is looking for
+        if ($trade->looking_skill_id == $user->skill_id) {
+            return true;
+        }
+        
+        // Check if user has a trade and their looking skill matches what this trade is offering
+        $userTrade = Trade::where('user_id', $user->id)->where('status', 'open')->first();
+        if ($userTrade && $userTrade->looking_skill_id == $trade->offering_skill_id) {
+            return true;
+        }
+        
+        return false;
     }
 
     private function calculateCompatibility($trade)

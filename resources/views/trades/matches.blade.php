@@ -16,22 +16,12 @@
         </div>
     @endif
 
-    @if(isset($noTradePosted) && $noTradePosted)
+    @if(isset($noSkill) && $noSkill)
         <div style="background:#fef3c7; color:#92400e; padding:20px; border-radius:8px; text-align:center; margin-bottom:16px;">
-            <div style="font-size:1.2rem; margin-bottom:8px;">📝 Post a Trade First</div>
-            <div style="margin-bottom:16px;">You need to post your own trade before you can see matching trades from other users.</div>
-            <a href="{{ route('trades.create') }}" style="display:inline-block; padding:10px 20px; background:#2563eb; color:#fff; text-decoration:none; border-radius:6px; font-weight:600;">
-                Post Your Trade
-            </a>
-        </div>
-    @endif
-
-    @if(isset($skillMismatch) && $skillMismatch)
-        <div style="background:#fde8e8; color:#9b1c1c; padding:20px; border-radius:8px; text-align:center; margin-bottom:16px;">
-            <div style="font-size:1.2rem; margin-bottom:8px;">⚠️ Skill Mismatch</div>
-            <div style="margin-bottom:16px;">Your trade is offering a skill that doesn't match your registered skill. You can only offer your registered skill.</div>
-            <a href="{{ route('trades.create') }}" style="display:inline-block; padding:10px 20px; background:#2563eb; color:#fff; text-decoration:none; border-radius:6px; font-weight:600;">
-                Fix Your Trade
+            <div style="font-size:1.2rem; margin-bottom:8px;">📝 Register a Skill First</div>
+            <div style="margin-bottom:16px;">You need to register a skill in your profile before you can see available trades.</div>
+            <a href="{{ route('profile.edit') }}" style="display:inline-block; padding:10px 20px; background:#2563eb; color:#fff; text-decoration:none; border-radius:6px; font-weight:600;">
+                Update Profile
             </a>
         </div>
     @endif
@@ -67,21 +57,27 @@
                         @endif
                     </div>
                     <div style="text-align:right; margin-left:16px;">
-                        <div style="background:#10b981; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:600;">
+                        <div style="background:{{ $t->is_compatible ? '#10b981' : '#9ca3af' }}; color:#fff; padding:4px 8px; border-radius:4px; font-size:0.8rem; font-weight:600;">
                             {{ $t->compatibility_score ?? 0 }}% Match
                         </div>
                         <div style="font-size:0.8rem; color:#6b7280; margin-top:4px;">
-                            Flexible matching
+                            {{ $t->is_compatible ? 'Compatible' : 'Not compatible' }}
                         </div>
                     </div>
                 </div>
                 
-                <form method="POST" action="{{ route('trades.request', $t->id) }}" style="display:flex; gap:8px; align-items:center;">
-                    @csrf
-                    <button type="submit" style="padding:8px 16px; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer; white-space:nowrap;">
-                        Request Trade
-                    </button>
-                </form>
+                @if($t->is_compatible)
+                    <form method="POST" action="{{ route('trades.request', $t->id) }}" style="display:flex; gap:8px; align-items:center;">
+                        @csrf
+                        <button type="submit" style="padding:8px 16px; background:#2563eb; color:#fff; border:none; border-radius:6px; cursor:pointer; white-space:nowrap;">
+                            Request Trade
+                        </button>
+                    </form>
+                @else
+                    <div style="padding:8px 16px; background:#9ca3af; color:#6b7280; border-radius:6px; font-size:0.9rem;">
+                        Not compatible with your skills
+                    </div>
+                @endif
             </div>
         @empty
             @if(!isset($noTradePosted) || !$noTradePosted)
