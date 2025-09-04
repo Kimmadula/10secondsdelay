@@ -308,12 +308,7 @@ class TradeController extends Controller
         // Combine both collections
         $ongoing = $ownedOngoing->merge($requestedOngoing);
         
-        // Add debug info to session for testing
-        session([
-            'debug_owned_count' => $ownedOngoing->count(),
-            'debug_requested_count' => $requestedOngoing->count(),
-            'debug_total_count' => $ongoing->count()
-        ]);
+
         
         return view('trades.ongoing', compact('ongoing', 'ownedOngoing', 'requestedOngoing'));
     }

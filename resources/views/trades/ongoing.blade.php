@@ -10,15 +10,8 @@
         </div>
     @endif
 
-    <!-- Debug Information (temporary) -->
-    @if(session('debug_owned_count') !== null)
-        <div style="background:#f3f4f6; padding:12px; border-radius:6px; margin-bottom:16px; font-size:0.9rem;">
-            <strong>Debug Info:</strong><br>
-            Your owned ongoing trades: {{ session('debug_owned_count') }}<br>
-            Trades you're participating in: {{ session('debug_requested_count') }}<br>
-            Total ongoing trades: {{ session('debug_total_count') }}
-        </div>
-    @endif
+
+
 
     <div style="display:grid; gap:12px;">
         @forelse($ongoing as $t)
@@ -94,17 +87,8 @@
 
 <script>
 function openChat(tradeId, partnerName) {
-    // For now, show an alert with the trade info
-    // In the future, this could open a chat modal or redirect to a chat page
-    alert(`Opening chat for trade ${tradeId} with ${partnerName}`);
-    
-    // You can replace this with actual chat functionality like:
-    // - Opening a chat modal
-    // - Redirecting to a chat page
-    // - Opening a messaging interface
-    
-    // Example: window.open(`/chat/${tradeId}`, '_blank');
-    // Example: document.getElementById('chatModal').style.display = 'block';
+    // Redirect to chat page
+    window.location.href = `/chat/${tradeId}`;
 }
 </script>
 @endsection

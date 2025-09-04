@@ -6,6 +6,8 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Auth\Listeners\SendEmailVerificationNotification;
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
 use Illuminate\Support\Facades\Event;
+use App\Events\MessageSent;
+use App\Events\TaskUpdated;
 
 class EventServiceProvider extends ServiceProvider
 {
@@ -27,7 +29,14 @@ class EventServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        //
+        // Manually register our custom events for broadcasting
+        Event::listen(MessageSent::class, function ($event) {
+            // This ensures the event is registered
+        });
+        
+        Event::listen(TaskUpdated::class, function ($event) {
+            // This ensures the event is registered
+        });
     }
 
     /**
@@ -37,6 +46,6 @@ class EventServiceProvider extends ServiceProvider
      */
     public function shouldDiscoverEvents()
     {
-        return false;
+        return true;
     }
 }

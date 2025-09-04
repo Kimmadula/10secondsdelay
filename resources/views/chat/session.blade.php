@@ -1,6 +1,23 @@
 @extends('layouts.chat')
 
 @section('content')
+<style>
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+    100% { transform: scale(1); }
+}
+
+@keyframes flash {
+    0% { background-color: rgba(59, 130, 246, 0.3); }
+    50% { background-color: rgba(16, 185, 129, 0.5); }
+    100% { background-color: rgba(59, 130, 246, 0.3); }
+}
+
+.flash-effect {
+    animation: flash 0.5s ease-in-out;
+}
+</style>
 <div style="height: 100vh; display: flex; flex-direction: column;">
     <!-- Header -->
     <div style="background: #1e40af; color: white; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
@@ -27,6 +44,7 @@
                 <div style="display: flex; align-items: center; gap: 8px;">
                     <span>💬</span>
                     <span>Session Chat</span>
+                    <span id="new-message-indicator" style="display: none; background: #ef4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; animation: pulse 2s infinite;">NEW</span>
                 </div>
                 <div style="display: flex; gap: 12px;">
                     <button style="background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem;">📷</button>
@@ -54,10 +72,7 @@
                            style="flex: 1; padding: 12px; border: 1px solid #d1d5db; border-radius: 6px; outline: none;">
                     <button type="submit" style="background: #1e40af; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Send</button>
                 </form>
-                <!-- Debug Test Button -->
-                <div style="margin-top: 8px; text-align: center;">
-                    <button onclick="testMessageSending()" style="background: #10b981; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-size: 0.875rem;">Test Message Sending</button>
-                </div>
+
             </div>
         </div>
 
@@ -178,57 +193,29 @@
     @csrf
 </form>
 
-<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 <script>
-// Initialize Pusher (only if configured)
-let pusher = null;
-let channel = null;
+// Laravel Echo is already initialized in bootstrap.js
+// We'll use it to listen for events
 
-try {
-    const pusherKey = '{{ config("broadcasting.connections.pusher.key") }}';
-    const pusherCluster = '{{ config("broadcasting.connections.pusher.options.cluster") }}';
-    
-    if (pusherKey && pusherKey !== 'your-pusher-key' && pusherCluster) {
-        pusher = new Pusher(pusherKey, {
-            cluster: pusherCluster
-        });
-        
-        channel = pusher.subscribe('trade-{{ $trade->id }}');
-        console.log('Pusher initialized successfully');
-    } else {
-        console.log('Pusher not configured - real-time features disabled');
-    }
-} catch (error) {
-    console.error('Failed to initialize Pusher:', error);
-}
-
-// Debug Pusher connection (only if Pusher is initialized)
-if (pusher) {
-    pusher.connection.bind('connected', function() {
-        console.log('Pusher connected successfully');
-    });
-
-    pusher.connection.bind('error', function(err) {
-        console.error('Pusher connection error:', err);
-    });
-
+// Listen for events using Laravel Echo
+if (window.Echo) {
     // Listen for new messages
-    if (channel) {
-        channel.bind('new-message', function(data) {
-            console.log('Received new message via Pusher:', data);
+    window.Echo.channel('trade-{{ $trade->id }}')
+        .listen('new-message', function(data) {
+            console.log('Received new message event:', data);
             // Only add if it's not from the current user (to avoid duplicates)
             if (data.message.sender_id !== {{ Auth::id() }}) {
                 addMessageToChat(data.message, data.sender_name, data.timestamp, false);
             }
         });
 
-        // Listen for task updates
-        channel.bind('task-updated', function(data) {
-            console.log('Received task update via Pusher:', data);
+    // Listen for task updates
+    window.Echo.channel('trade-{{ $trade->id }}')
+        .listen('task-updated', function(data) {
+            console.log('Received task update event:', data);
             updateTask(data.task);
             updateProgress();
         });
-    }
 }
 
 // Message handling
@@ -244,9 +231,7 @@ document.getElementById('message-form').addEventListener('submit', function(e) {
 });
 
 function sendMessage(message) {
-    console.log('Sending message:', message);
-    console.log('CSRF Token:', '{{ csrf_token() }}');
-    console.log('Trade ID:', {{ $trade->id }});
+
     
     // Add message to UI immediately (optimistic update)
     const tempId = 'temp_' + Date.now();
@@ -262,26 +247,26 @@ function sendMessage(message) {
         body: JSON.stringify({ message: message })
     })
     .then(response => {
-        console.log('Response status:', response.status);
+
         return response.json();
     })
     .then(data => {
-        console.log('Response data:', data);
+
         if (data.success) {
             // Update the temporary message with the real one
             updateMessageInChat(tempId, data.message);
         } else {
-            console.error('Error sending message:', data.error);
+
             // Remove the temporary message if it failed
             removeMessageFromChat(tempId);
-            alert('Failed to send message: ' + (data.error || 'Unknown error'));
+            showError('Failed to send message: ' + (data.error || 'Unknown error'));
         }
     })
     .catch(error => {
-        console.error('Fetch error:', error);
+
         // Remove the temporary message if it failed
         removeMessageFromChat(tempId);
-        alert('Failed to send message. Please try again. Error: ' + error.message);
+                    showError('Failed to send message. Please try again.');
     });
 }
 
@@ -310,7 +295,70 @@ function addMessageToChat(message, senderName, timestamp, isOwn, tempId = null) 
     chatMessages.appendChild(messageDiv);
     chatMessages.scrollTop = chatMessages.scrollHeight;
     
+    // Flash effect for new messages (only for incoming messages, not your own)
+    if (!isOwn) {
+        console.log('🆕 New message added dynamically:', messageText);
+        flashChatArea();
+    }
+    
     return messageDiv;
+}
+
+// Add flash effect function
+function flashChatArea() {
+    const chatMessages = document.getElementById('chat-messages');
+    
+    // Create flash overlay
+    const flashOverlay = document.createElement('div');
+    flashOverlay.style.cssText = `
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(45deg, rgba(59, 130, 246, 0.3), rgba(16, 185, 129, 0.3));
+        border-radius: 8px;
+        pointer-events: none;
+        z-index: 10;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    `;
+    
+    // Position the overlay relative to chat messages
+    chatMessages.style.position = 'relative';
+    chatMessages.appendChild(flashOverlay);
+    
+    // Trigger flash animation
+    setTimeout(() => {
+        flashOverlay.style.opacity = '1';
+    }, 50);
+    
+    setTimeout(() => {
+        flashOverlay.style.opacity = '0';
+    }, 150);
+    
+    // Remove overlay after animation
+    setTimeout(() => {
+        if (flashOverlay.parentNode) {
+            flashOverlay.parentNode.removeChild(flashOverlay);
+        }
+    }, 500);
+    
+    // Show new message indicator
+    showNewMessageIndicator();
+}
+
+// Show new message indicator
+function showNewMessageIndicator() {
+    const indicator = document.getElementById('new-message-indicator');
+    if (indicator) {
+        indicator.style.display = 'inline-block';
+        
+        // Hide after 3 seconds
+        setTimeout(() => {
+            indicator.style.display = 'none';
+        }, 3000);
+    }
 }
 
 function updateMessageInChat(tempId, messageData) {
@@ -436,12 +484,12 @@ document.getElementById('add-task-form').addEventListener('submit', function(e) 
             document.getElementById('task-title').value = '';
             document.getElementById('task-description').value = '';
         } else {
-            alert('Failed to create task: ' + (data.error || 'Unknown error'));
+            showError('Failed to create task: ' + (data.error || 'Unknown error'));
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('Failed to create task. Please try again.');
+                    showError('Failed to create task. Please try again.');
     });
 });
 
@@ -480,24 +528,34 @@ setInterval(function() {
 // Keep track of the last message count
 let lastMessageCount = {{ $messages->count() }};
 
-// Function to refresh messages if needed
-function checkForNewMessages() {
-    fetch('/chat/{{ $trade->id }}/messages')
-    .then(response => response.json())
-    .then(data => {
-        if (data.success && data.count > lastMessageCount) {
-            console.log('New messages detected, refreshing...');
-            location.reload();
-        }
-    })
-    .catch(error => {
-        // Ignore errors
-    });
+// Check for new messages every 10 seconds (only if Laravel Echo is not working)
+if (!window.Echo) {
+    setInterval(checkForNewMessages, 1000);
 }
 
-// Check for new messages every 10 seconds (only if Pusher is not working)
-if (!pusher) {
-    setInterval(checkForNewMessages, 10000);
+function checkForNewMessages() {
+    fetch('/chat/{{ $trade->id }}/messages')
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.count > lastMessageCount) {
+                // Get only the new messages
+                const newMessages = data.messages.slice(lastMessageCount);
+                lastMessageCount = data.count;
+
+                // Add only new messages to chat
+                newMessages.forEach(msg => {
+                    addMessageToChat(
+                        msg,
+                        msg.sender.firstname + ' ' + msg.sender.lastname,
+                        new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                        msg.sender_id === {{ Auth::id() }}
+                    );
+                });
+            }
+        })
+        .catch(error => {
+            console.error("Error checking for new messages:", error);
+        });
 }
 
 function endSession() {
@@ -506,16 +564,6 @@ function endSession() {
     }
 }
 
-// Test function for debugging
-function testMessageSending() {
-    console.log('=== TESTING MESSAGE SENDING ===');
-    console.log('Trade ID:', {{ $trade->id }});
-    console.log('User ID:', {{ Auth::id() }});
-    console.log('CSRF Token:', '{{ csrf_token() }}');
-    
-    // Test with a simple message
-    const testMessage = 'Test message at ' + new Date().toLocaleTimeString();
-    sendMessage(testMessage);
-}
+
 </script>
 @endsection
