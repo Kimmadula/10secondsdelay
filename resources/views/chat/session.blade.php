@@ -28,7 +28,192 @@
     word-break: break-word !important;
     line-height: 1.4 !important;
 }
+
+/* Video Chat Styles */
+.video-chat-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    z-index: 9999;
+    justify-content: center;
+    align-items: center;
+}
+
+.video-chat-container {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    max-width: 800px;
+    width: 90%;
+    max-height: 90%;
+    overflow: hidden;
+    position: relative;
+}
+
+.video-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 20px;
+}
+
+.video-item {
+    position: relative;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    aspect-ratio: 16/9;
+}
+
+.video-item video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.video-item.remote {
+    border: 2px solid #3b82f6;
+}
+
+.video-item.local {
+    border: 2px solid #10b981;
+}
+
+.video-controls {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.video-btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.video-btn.primary {
+    background: #3b82f6;
+    color: white;
+}
+
+.video-btn.primary:hover {
+    background: #2563eb;
+}
+
+.video-btn.danger {
+    background: #ef4444;
+    color: white;
+}
+
+.video-btn.danger:hover {
+    background: #dc2626;
+}
+
+.video-btn.success {
+    background: #10b981;
+    color: white;
+}
+
+.video-btn.success:hover {
+    background: #059669;
+}
+
+.video-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.video-status {
+    text-align: center;
+    margin-bottom: 20px;
+    font-weight: 600;
+    color: #374151;
+}
+
+.call-timer {
+    text-align: center;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: #3b82f6;
+    margin-bottom: 20px;
+}
+
+.close-video {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.7);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+
+.connection-status {
+    position: absolute;
+    top: 15px;
+    left: 15px;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.connection-status.connected {
+    background: #10b981;
+    color: white;
+}
+
+.connection-status.connecting {
+    background: #f59e0b;
+    color: white;
+}
+
+.connection-status.disconnected {
+    background: #ef4444;
+    color: white;
+}
 </style>
+
+<!-- Video Chat Modal -->
+<div id="video-chat-modal" class="video-chat-modal">
+    <div class="video-chat-container">
+        <button class="close-video" onclick="closeVideoChat()">×</button>
+        
+        <div class="video-status" id="video-status">Initializing video chat...</div>
+        <div class="call-timer" id="call-timer" style="display: none;">00:00</div>
+        
+        <div class="video-grid">
+            <div class="video-item local">
+                <video id="local-video" autoplay muted playsinline></video>
+                <div class="connection-status" id="local-status">Local</div>
+            </div>
+            <div class="video-item remote">
+                <video id="remote-video" autoplay playsinline></video>
+                <div class="connection-status" id="remote-status">Waiting...</div>
+            </div>
+        </div>
+        
+        <div class="video-controls">
+            <button id="start-call-btn" class="video-btn primary" onclick="startVideoCall()">Start Call</button>
+            <button id="end-call-btn" class="video-btn danger" onclick="endVideoCall()" style="display: none;">End Call</button>
+            <button id="toggle-audio-btn" class="video-btn success" onclick="toggleAudio()" style="display: none;">Mute Audio</button>
+            <button id="toggle-video-btn" class="video-btn success" onclick="toggleVideo()" style="display: none;">Turn Off Video</button>
+        </div>
+    </div>
+</div>
+
 <div style="height: 100vh; display: flex; flex-direction: column;">
     <!-- Header -->
     <div style="background: #1e40af; color: white; padding: 16px; display: flex; justify-content: space-between; align-items: center;">
@@ -58,7 +243,7 @@
                     <span id="new-message-indicator" style="display: none; background: #ef4444; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.7rem; animation: pulse 2s infinite;">NEW</span>
                 </div>
                 <div style="display: flex; gap: 12px;">
-                    <button style="background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem;">📷</button>
+                    <button id="video-call-btn" style="background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem;" onclick="openVideoChat()">📷</button>
                     <button style="background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem;">🎤</button>
                     <button style="background: none; border: none; color: white; cursor: pointer; font-size: 1.2rem;">⚠️</button>
                 </div>
@@ -621,6 +806,252 @@ function endSession() {
     }
 }
 
+// ===== VIDEO CHAT FUNCTIONALITY =====
+
+// WebRTC variables
+let localStream = null;
+let remoteStream = null;
+let peerConnection = null;
+let isCallActive = false;
+let callStartTime = null;
+let callTimer = null;
+let isAudioMuted = false;
+let isVideoOff = false;
+
+// Video chat modal functions
+function openVideoChat() {
+    document.getElementById('video-chat-modal').style.display = 'flex';
+    initializeVideoChat();
+}
+
+function closeVideoChat() {
+    document.getElementById('video-chat-modal').style.display = 'none';
+    if (isCallActive) {
+        endVideoCall();
+    }
+    resetVideoChat();
+}
+
+function resetVideoChat() {
+    // Reset UI
+    document.getElementById('video-status').textContent = 'Initializing video chat...';
+    document.getElementById('call-timer').style.display = 'none';
+    document.getElementById('start-call-btn').style.display = 'inline-block';
+    document.getElementById('end-call-btn').style.display = 'none';
+    document.getElementById('toggle-audio-btn').style.display = 'none';
+    document.getElementById('toggle-video-btn').style.display = 'none';
+    
+    // Reset status indicators
+    document.getElementById('local-status').textContent = 'Local';
+    document.getElementById('remote-status').textContent = 'Waiting...';
+    document.getElementById('remote-status').className = 'connection-status';
+    
+    // Stop all tracks
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+        localStream = null;
+    }
+    
+    // Clear video elements
+    document.getElementById('local-video').srcObject = null;
+    document.getElementById('remote-video').srcObject = null;
+    
+    // Reset variables
+    isCallActive = false;
+    isAudioMuted = false;
+    isVideoOff = false;
+    
+    if (callTimer) {
+        clearInterval(callTimer);
+        callTimer = null;
+    }
+}
+
+async function initializeVideoChat() {
+    try {
+        // Request camera and microphone access
+        localStream = await navigator.mediaDevices.getUserMedia({
+            video: true,
+            audio: true
+        });
+        
+        // Display local video
+        document.getElementById('local-video').srcObject = localStream;
+        document.getElementById('local-status').textContent = 'Ready';
+        document.getElementById('local-status').className = 'connection-status connected';
+        
+        // Update status
+        document.getElementById('video-status').textContent = 'Camera and microphone ready. Click "Start Call" to begin.';
+        
+        // Show start call button
+        document.getElementById('start-call-btn').disabled = false;
+        
+    } catch (error) {
+        console.error('Error accessing media devices:', error);
+        document.getElementById('video-status').textContent = 'Error: Could not access camera or microphone. Please check permissions.';
+        document.getElementById('start-call-btn').disabled = true;
+    }
+}
+
+function startVideoCall() {
+    if (!localStream) {
+        alert('Please wait for camera and microphone to initialize.');
+        return;
+    }
+    
+    // Initialize WebRTC peer connection
+    initializePeerConnection();
+    
+    // Update UI
+    document.getElementById('video-status').textContent = 'Call in progress...';
+    document.getElementById('start-call-btn').style.display = 'none';
+    document.getElementById('end-call-btn').style.display = 'inline-block';
+    document.getElementById('toggle-audio-btn').style.display = 'inline-block';
+    document.getElementById('toggle-video-btn').style.display = 'inline-block';
+    
+    // Start call timer
+    callStartTime = new Date();
+    document.getElementById('call-timer').style.display = 'block';
+    callTimer = setInterval(updateCallTimer, 1000);
+    
+    isCallActive = true;
+    
+    // Simulate remote connection (in real implementation, this would connect to the other user)
+    setTimeout(() => {
+        simulateRemoteConnection();
+    }, 2000);
+}
+
+function initializePeerConnection() {
+    // Create RTCPeerConnection with STUN servers for NAT traversal
+    const configuration = {
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+    };
+    
+    peerConnection = new RTCPeerConnection(configuration);
+    
+    // Add local stream tracks to peer connection
+    localStream.getTracks().forEach(track => {
+        peerConnection.addTrack(track, localStream);
+    });
+    
+    // Handle incoming tracks
+    peerConnection.ontrack = (event) => {
+        remoteStream = event.streams[0];
+        document.getElementById('remote-video').srcObject = remoteStream;
+        document.getElementById('remote-status').textContent = 'Connected';
+        document.getElementById('remote-status').className = 'connection-status connected';
+    };
+    
+    // Handle connection state changes
+    peerConnection.onconnectionstatechange = () => {
+        console.log('Connection state:', peerConnection.connectionState);
+        if (peerConnection.connectionState === 'connected') {
+            document.getElementById('remote-status').textContent = 'Connected';
+            document.getElementById('remote-status').className = 'connection-status connected';
+        } else if (peerConnection.connectionState === 'disconnected') {
+            document.getElementById('remote-status').textContent = 'Disconnected';
+            document.getElementById('remote-status').className = 'connection-status disconnected';
+        }
+    };
+}
+
+function simulateRemoteConnection() {
+    // This is a simulation - in a real app, you'd connect to the actual other user
+    document.getElementById('remote-status').textContent = 'Connected (Demo)';
+    document.getElementById('remote-status').className = 'connection-status connected';
+    document.getElementById('video-status').textContent = 'Call connected! You can now see and hear each other.';
+}
+
+function endVideoCall() {
+    isCallActive = false;
+    
+    // Close peer connection
+    if (peerConnection) {
+        peerConnection.close();
+        peerConnection = null;
+    }
+    
+    // Stop call timer
+    if (callTimer) {
+        clearInterval(callTimer);
+        callTimer = null;
+    }
+    
+    // Update UI
+    document.getElementById('video-status').textContent = 'Call ended.';
+    document.getElementById('call-timer').style.display = 'none';
+    
+    // Reset to initial state
+    setTimeout(() => {
+        if (document.getElementById('video-chat-modal').style.display !== 'none') {
+            resetVideoChat();
+            document.getElementById('video-status').textContent = 'Camera and microphone ready. Click "Start Call" to begin.';
+        }
+    }, 2000);
+}
+
+function toggleAudio() {
+    if (localStream) {
+        const audioTrack = localStream.getAudioTracks()[0];
+        if (audioTrack) {
+            audioTrack.enabled = !audioTrack.enabled;
+            isAudioMuted = !audioTrack.enabled;
+            
+            const btn = document.getElementById('toggle-audio-btn');
+            if (isAudioMuted) {
+                btn.textContent = 'Unmute Audio';
+                btn.style.background = '#6b7280';
+            } else {
+                btn.textContent = 'Mute Audio';
+                btn.style.background = '#10b981';
+            }
+        }
+    }
+}
+
+function toggleVideo() {
+    if (localStream) {
+        const videoTrack = localStream.getVideoTracks()[0];
+        if (videoTrack) {
+            videoTrack.enabled = !videoTrack.enabled;
+            isVideoOff = !videoTrack.enabled;
+            
+            const btn = document.getElementById('toggle-video-btn');
+            if (isVideoOff) {
+                btn.textContent = 'Turn On Video';
+                btn.style.background = '#6b7280';
+            } else {
+                btn.textContent = 'Turn Off Video';
+                btn.style.background = '#10b981';
+            }
+        }
+    }
+}
+
+function updateCallTimer() {
+    if (callStartTime) {
+        const now = new Date();
+        const diff = Math.floor((now - callStartTime) / 1000);
+        const minutes = Math.floor(diff / 60);
+        const seconds = diff % 60;
+        document.getElementById('call-timer').textContent = 
+            `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    }
+}
+
+// Handle page unload to clean up video chat
+window.addEventListener('beforeunload', () => {
+    if (isCallActive) {
+        endVideoCall();
+    }
+    if (localStream) {
+        localStream.getTracks().forEach(track => track.stop());
+    }
+});
 
 </script>
 @endsection
