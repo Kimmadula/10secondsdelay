@@ -13,4 +13,19 @@ class Skill extends Model
     public $timestamps = false; // <-- Add this line
 
     protected $fillable = ['name', 'category'];
+    
+    public function users()
+    {
+        return $this->hasMany(\App\Models\User::class, 'skill_id', 'skill_id');
+    }
+
+    public function tradesOffering()
+    {
+        return $this->hasMany(\App\Models\Trade::class, 'offering_skill_id', 'skill_id');
+    }
+
+    public function tradesLooking()
+    {
+        return $this->hasMany(\App\Models\Trade::class, 'looking_skill_id', 'skill_id');
+    }
 }

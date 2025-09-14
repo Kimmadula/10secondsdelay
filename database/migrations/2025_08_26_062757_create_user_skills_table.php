@@ -17,6 +17,7 @@ return new class extends Migration
             $table->id('skill_id'); // BIGINT UNSIGNED PRIMARY KEY
             $table->string('category', 50); // Category of the skill
             $table->string('name', 50); // Name of the skill
+            $table->unique(['name', 'category']); // Prevent duplicate skills with same name and category
         });
     }
 

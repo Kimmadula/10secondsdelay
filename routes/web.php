@@ -58,6 +58,15 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::get('/skills/create', [AdminController::class, 'createSkill'])->name('admin.skill.create');
     Route::post('/skills', [AdminController::class, 'storeSkill'])->name('admin.skill.store');
     Route::delete('/skills/{skill}', [AdminController::class, 'deleteSkill'])->name('admin.skill.delete');
+    Route::get('/exchanges', [AdminController::class, 'exchangesIndex'])->name('admin.exchanges.index');
+    Route::get('/exchanges/{trade}', [AdminController::class, 'showExchange'])->name('admin.exchanges.show');
+    Route::get('/reports', [AdminController::class, 'reportsIndex'])->name('admin.reports.index');
+    Route::get('/reports/export', [AdminController::class, 'exportReports'])->name('admin.reports.export');
+    Route::get('/messages', [AdminController::class, 'messagesIndex'])->name('admin.messages.index');
+    Route::get('/messages/{message}', [AdminController::class, 'showMessage'])->name('admin.messages.show');
+    Route::post('/messages/{message}/reply', [AdminController::class, 'replyMessage'])->name('admin.messages.reply');
+    Route::get('/settings', [AdminController::class, 'settingsIndex'])->name('admin.settings.index');
+    Route::post('/settings', [AdminController::class, 'updateSettings'])->name('admin.settings.update');
     Route::patch('/approve/{user}', [AdminController::class, 'approve'])->name('admin.approve');
     Route::patch('/reject/{user}', [AdminController::class, 'reject'])->name('admin.reject');
     Route::get('/user/{user}', [AdminController::class, 'show'])->name('admin.user.show');
